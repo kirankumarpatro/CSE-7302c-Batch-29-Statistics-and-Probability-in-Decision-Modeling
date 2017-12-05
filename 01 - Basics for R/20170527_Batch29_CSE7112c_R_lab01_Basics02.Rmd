@@ -1,0 +1,332 @@
+---
+title: "20170527_Batch29_CSE7112c_R_lab01_Basics02"
+author: "Insofe"
+date: "May 27, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(root.dir="D:\\Batch 29\\Batch29_R\\INPUTS")
+```
+
+
+##clearing work space
+
+```{r cars}
+rm(list=ls(all=TRUE))
+```
+
+##know your working directory
+```{r}
+getwd()
+```
+
+##set your working directory in which you have input files
+```{r}
+#setwd("C://Users/Shiva/Desktop/CPEE/Batch29/INPUTS")
+```
+
+##Reading different types of files(basic commands)
+1.Reading the csv files into R environment
+
+```{r}
+Grade<-read.csv("Grade1.csv",header=T,sep=",")
+dim(Grade)
+```
+
+2.Reading other formats we use read.table command
+
+```{r}
+read<-read.table("greek.txt",sep="\t",header=T)
+
+```
+
+3.Reading Excel files:package required is XLConnect
+
+```{r}
+#install.packages("XLConnect")
+require(XLConnect) #library(XLConnect) # To loas an add-on package
+wb<-loadWorkbook("Book3.xlsx")
+sheet<-readWorksheet(wb,"Sheet1",header=T)
+```
+
+Explore on your own there will be more functions availbale for multiple types of files and formats
+
+
+
+##saving you ouput files(basic commands)
+1.writing into a CSV file
+```{r}
+write.csv(Grade,"data.csv", row.names=F)
+
+
+```
+2.writing into Excel
+```{r}
+library(xlsx)
+write.xlsx(sheet,"OUTPUTSwrite.xlsx",row.names=F)
+
+```
+
+##Conditional statements
+
+1.if Conditional Statement
+
+"
+if(boolean_expression) {
+   // statement(s) will execute if the boolean expression is true.
+}
+
+"
+```{r}
+x <- 30
+if(is.numeric(x)) {
+  print("X is an numeric")
+}
+age<-45
+if(age>45){
+  print("middle-age person")
+}
+```
+
+2.if-else Conditional Statement
+
+if(boolean_expression) 
+{
+   // statement(s) will execute if the boolean expression is true.
+} 
+else 
+{
+// statement(s) will execute if the boolean expression is false.
+}
+
+```{r}
+x <- c("what","is","truth")
+
+if("Truth" %in% x) {
+  print("Truth is found")
+} else {
+  print("Truth is not found")
+}
+```
+
+##Loops
+For Loop
+"
+for (value in vector) {
+  statements
+}
+"
+
+```{r}
+v <- LETTERS[1:4]
+v
+for ( i in v) {
+  print(i)
+}
+
+for(i in 1:length(v)){
+  
+  print(v[i])
+}
+```
+
+While loop
+"
+while (test_expression) {
+   statement
+}
+"
+```{r}
+v <- c("Hello","while loop")
+cnt <- 0
+
+while (cnt < 4) {
+  print(v)
+  cnt = cnt + 1
+}
+```
+
+
+"For example I want to categorize the students into 3 bins based on the overall percentage as follows
+if pct < 40 then C, if 40 < pct < 60,B and if greater than 60 then A
+"
+Using for loop
+```{r}
+
+
+Grade$class<-NA
+for(i in 1:nrow(Grade)){
+  if(Grade$OverallPct1[i]<40){
+    Grade$class[i]<-"C"
+  }else{
+    if(Grade$OverallPct1[i]<60){
+      Grade$class[i]<-"B"
+    }else{
+      Grade$class[i]<-"A"
+    }
+  }
+}
+```
+
+Doing the same using ifelse
+```{r}
+Grade$Class1<-ifelse(Grade$OverallPct1<40,"C",ifelse(Grade$OverallPct1<60,"B","A"))
+
+```
+
+Again Giving multiple conditions in the if or ifelse statements
+```{r}
+Grade$class2<-ifelse(Grade$OverallPct1<40 | Grade$Math1<60, "C",
+                     ifelse (Grade$OverallPct1<60 |Grade$Math1<80,"B","A")) ##for "and" use "&"
+```
+
+
+##Writing function in R
+
+1.built in functions
+returns sum
+```{r}
+v<-c(1,2,3,4,5)
+sum(v)
+```
+returns mean and standard deviation
+```{r}
+v<-c(1,2,3,4,5)
+mean(v)
+sd(v)
+```
+
+2.user defined functions
+"
+function_name <- function(arg_1, arg_2, ...) {
+   Function body 
+}
+"
+```{r}
+square<-function(x){
+  return(x^2)
+}
+square(3)
+square(c(3,2))
+```
+
+you can also apply a function on data frame
+```{r}
+y<-data.frame(A=c(1,2,3,4),B=c(5,6,7,8))
+y
+square(y)
+```
+
+
+##Some useful functions used in data manipulations
+1.apply
+
+```{r}
+attach(mtcars)
+data<-mtcars
+str(data)
+summary(data)
+```
+
+suppose if we Want to find min value for each column in mtcars dataset then
+```{r}
+data=mtcars
+min(data$mpg)
+a<-apply(data,2,min) #This generates the min values for each 
+
+```
+
+writing the output of previous code to a data frame
+```{r}
+A<-apply(data[,2:11],2,min)
+A<-data.frame(min=apply(data[,2:11],2,min))
+B<-apply(data[,2:11],2,max)
+```
+
+
+##We can find the stats for each of the variable separately
+##If we want to have all the stats in a data frame we can write a customize function for this
+```{r}
+stat<-function(x){
+  "Mean"=mean(x)
+  "Min"=min(x)
+  "Max"=max(x)
+  A<-data.frame(Min,Mean,Max)
+  return(A)
+}
+stats<-apply(data[,2:11],2,FUN=stat) ##Observe the ouptput of apply.. it is a list
+class(stats)
+result<-do.call(rbind,stats)
+```
+
+2.lapply
+```{r}
+l<-lapply(data[,2:11],mean) 
+```
+3.tapply
+```{r}
+tappy<-tapply(mtcars$mpg,mtcars$cyl,mean) # takes one function and gives the values and not a dataframe
+tappy ##This gives out the mean mileage for each cylinder types
+```
+
+##Subsetting
+
+Subset on vectors
+
+```{r}
+v<-c(1,2,3,4,5)
+v[v>3]  #Output all elements greater than 3
+```
+
+Subset on matrices and data frames
+a. Calling by cell positions
+```{r}
+#library(dplyr)
+data<-mtcars
+data1<-data[,2:11]
+data1<-data[1:10,2:11]
+```
+
+b. By using column names
+```{r}
+data1<-data[,c("mpg","cyl")]
+```
+
+c. Using a subset function ##from help identify the argument to be given
+```{r}
+data1<-subset(data,mpg>25,select=mpg:carb)
+```
+
+d. The same dataframe can be obtained in another way
+```{r}
+data1<-data[mpg>25,]
+```
+
+##Multiple conditions can be given using "&" or "|"
+```{r}
+data<-mtcars
+attach(data)
+data2<-data[mpg>25 & hp>75,]
+data2<-subset(data,mpg>25 | gear==5,select=mpg:carb)
+filter(data,mpg>25 | gear==5)
+```
+
+Using which.max
+```{r}
+data[which.max(mpg),]
+```
+
+Using which.min
+```{r}
+data[which.min(mpg),]
+```
+
+Using which
+
+```{r}
+data[which(data$mpg==max(data$mpg)),]
+data[which(row.names(data) %in% c("Mazda RX4","Datsun 710")),]
+```
+

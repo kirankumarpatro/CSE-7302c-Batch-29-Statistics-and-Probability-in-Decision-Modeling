@@ -1,0 +1,277 @@
+---
+title: "Regularization on Mice Protein Expression Data Set "
+author: "Insofe Labs"
+date: "28 June 2017"
+output: 
+  html_notebook: 
+    fig_caption: yes
+    theme: united
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    
+---
+# Data Description
+         The data set consists of the expression levels of 77 proteins/protein modifications that  produced   detectable   signals in the nuclear fraction of  cortex. There are 38 control  mice and 34 trisomic mice (Down syndrome), for a total of 72 mice. In the  experiments, 15 measurements were registered of each protein per sample/mouse. Therefore, for control mice, there are 38x15, or 570 measurements, and for trisomic mice, there are 34x15, or 510 measurements. The dataset contains a total of 1080 measurements per protein
+```{r Data Description, echo=TRUE}
+# Attribute Information:
+# 
+# 1 Mouse ID 
+# 2-78 Values of expression levels of 77 proteins; the names of proteins 
+# 79 Genotype: control (c) or trisomy (t) 
+# 80 Treatment type: memantine (m) or saline (s) 
+# 81 Behavior: context-shock (CS) or shock-context (SC) 
+# # 82 Class: c-CS-s, c-CS-m, c-SC-s, c-SC-m, t-CS-s, t-CS-m, t-SC-s, t-SC-m 
+
+# Classes: 
+# c-CS-s: control mice, stimulated to learn, injected with saline (9 mice) 
+# c-CS-m: control mice, stimulated to learn, injected with memantine (10 mice) 
+# c-SC-s: control mice, not stimulated to learn, injected with saline (9 mice) 
+# c-SC-m: control mice, not stimulated to learn, injected with memantine (10 mice) 
+# t-CS-s: trisomy mice, stimulated to learn, injected with saline (7 mice) 
+# t-CS-m: trisomy mice, stimulated to learn, injected with memantine (9 mice) 
+# t-SC-s: trisomy mice, not stimulated to learn, injected with saline (9 mice) 
+# t-SC-m: trisomy mice, not stimulated to learn, injected with memantine (9 mice) 
+
+```
+#Clean Your Global Environment
+* Note that clearing the environment is a good practice while learning but when sharing the code remember to remove it.
+```{r Cleaning the Environment}
+rm(list=ls(all=TRUE))
+```
+#Libraries Required
+* Keeping the libraris at one place is a best practice 
+* Think and get  the libraries required for the problem 
+```{r Getting the Required Libraries}
+library(glmnet)
+library(caret)
+library(MASS)
+library(vegan)
+library(data.table)
+library(doParallel)
+library(DMwR)
+library(dummies)
+
+```
+# Reading the Data Set 
+* Note that it is not always needed to get the directory set 
+* Just copy your csv and paste it between the quotes " " and deleted file:///
+```{r Reading the Data Set}
+data<-read.csv("D:/Academic Stuff/Regularization/Data_Cortex_Nuclear.csv",header=TRUE,sep=",",na.strings=c(" ",""))
+```
+##Structure Check
+* Observing the structure will reveal what are the data types of attributes
+* It can be helpful to understand any data type changes are required
+```{r Structure}
+str(data)
+```
+##Summary Check 
+* check the summary and remove unnecessary variables 
+  +  It is necessary to see basic stats of the variables 
+  +  NA values,Classes in the target and other attributes are counted in Summary
+```{r Summary}
+summary(data)
+data$MouseID<-NULL
+```
+
+##Check Missing Values
+* Missing values impact the learning
+
+```{r Missing Values Check}
+
+sum(is.na(data))
+
+```
+
+*What is the percentage of the NA values ?
+```{r Percenatage of Missing Values}
+na.percentage=(sum(is.na(data))/(nrow(data)*ncol(data)))*100
+```
+
+*Impute the NA values using a suitable technique
+```{r Imputation}
+data<-centralImputation(data)
+data$MouseID<-NULL
+```
+
+*Check for the summary
+```{r Recheck the Summary}
+summary(data)
+```
+
+# Target levels Distribution 
+```{r Class Check Before Split}
+ table(data$class)
+```
+#Splitting the data
+* Split the data into train data set and test data set
+* Split ratio can be 80/20 or 70/30 
+* Splitting in case of classification be careful to see that the levels of    target  distribution is  in same proportion in both train and test 
+* This can be achieved with the Caret Package "createDataPartition"
+```{r Splitting  Data}
+rows=createDataPartition(data$class,p = 0.7,list = FALSE)
+train=data[rows,]
+test=data[-rows,]
+```
+#Testing the Class Distribution Later
+```{r Class Check after Split}
+table(train$class)
+levels(train$class)
+plot(train$class,col=c("red","black","yellow","blue","magenta","brown","skyblue","purple"))
+table(test$class)
+plot(test$class,col=c("red","black","yellow","blue","magenta","brown","skyblue","purple"))
+```
+# Standardization
+*Standardization is needed beacause the higher values of the attibute should not dominate the model.
+```{r PreProcess}
+preProc=preProcess(data)
+train=predict(preProc,train)
+test=predict(preProc,test)
+```
+#Parallel
+* Use the registerDoParallel() to speed up your process while cross validating
+* Those who use linux doMC also helps the same way by creating multiple cores
+```{r Parallelization}
+registerDoParallel(8)
+```
+#Lasso Model
+* Lasso always fits a linear model 
+* It involves penalizing the absolute size of the regression coefficients.
+* For regularization glmnet package is used.
+* This package is used for both regression and classification
+* Linear,Poisson regressions ,binomial and multinomial classifications are possible
+* Check the help with ?glmnet and use the arguments needed 
+```{r Building  Lasso Model}
+x=model.matrix(train$class~.,train)
+model=glmnet(x,train$class,family = "multinomial",type.multinomial = "grouped")
+```
+## Plots for Different Lambda
+* Plot the model for different lambda values as modelled above 
+* The plot justifies that for different values of lambda there are different attributes which are moving towards zero.
+* But the question is What is the optimum value for lambda??
+```{r Plotting the Response with various Lambda}
+plot(model)
+```
+
+##Cross Validation for Lasso 
+```{r CrossValidation for Lasso}
+cv.model<-cv.glmnet(x,train$class,type.measure="class",grouped=TRUE,parallel=TRUE,nfolds=5,family="multinomial")
+```
+
+
+
+
+
+
+## Predicting the Min Lambda
+* plot the Cross validated model to choose the minimum lambda
+```{r Plot to check for Min Lambda}
+plot(cv.model)
+cv.model$lambda.min
+
+```
+
+Perform the model with the lambda min choosen 
+```{r Redo Model with Min Lambda}
+newmodel=glmnet(x,train$class,family = "multinomial",type.multinomial = "grouped",lambda = cv.model$lambda.min)
+```
+##Getting the Coefficnets for Lasso 
+* code to get the coefficients that are not zero from the Lasso model 
+```{r Getting Lasso Coefficents}
+coef=coef(newmodel,s = cv.model$lambda.min)
+ ind <- which(coef(newmodel,s = cv.model$lambda.min)[[1]] != 0)
+
+ df_lass0 <- data.frame(
+        feature=rownames(coef(newmodel, s=cv.model$lambda.min)[[1]])[ind],
+        coeficient=(coef(newmodel, s=cv.model$lambda.min)[[1]])[ind])
+ df_lass0
+```
+#Prediction on Lasso
+* Convert the test data set into required format as done prior to the model
+
+```{r Prediction on Lasso}
+xx=model.matrix(test$class~.,test)
+pred<-predict(newmodel,xx,type = "class")
+```
+
+Form the table of the confusion matrix
+```{r Confusion Matrix}
+table(pred,test$class)
+```
+##Confusion Matrix
+Use the confusion matrix and study the various metrics
+```{r Metrics}
+confusionMatrix(pred,test$class)
+```
+#Ridge Regression 
+* Ridge Regression fits a linear equation but with all the features involved
+* The features that are not removed by lasso will hava a very least coeffients
+* alpha =0 gives the ridge regression 
+* Ridge can be possible in MASS package using lm.ridge 
+```{r Ridge Model}
+ridge=glmnet(x,train$class,family = "multinomial",type.multinomial = "grouped",alpha = 0)
+```
+##Cross Validated Model
+```{r CrossValidation for Ridge}
+cv.ridge<-cv.glmnet(x,train$class,type.measure="class",grouped=TRUE,parallel=TRUE,nfolds=5,family="multinomial",alpha=0)
+```
+Run the model taking the lambda min 
+```{r Getting the Lambda Min}
+
+new_ridge=glmnet(x,train$class,family = "multinomial",type.multinomial = "grouped",alpha = 0,lambda =cv.ridge$lambda.min )
+```
+##Ridge Coefficeints
+```{r Coeffiecients for Ridge Regression}
+coef_ridge=coef(new_ridge,s = cv.ridge$lambda.min)
+ ind <- which(coef(new_ridge,s = cv.ridge$lambda.min)[[1]] != 0)
+
+ df_ridge <- data.frame(
+        feature=rownames(coef(new_ridge, s=cv.ridge$lambda.min)[[1]])[ind],
+        coeficient=(coef(new_ridge, s=cv.ridge$lambda.min)[[1]])[ind])
+ df_ridge
+```
+#Prediction on Ridge Regularization 
+Predict the class for the test set
+```{r Prediction on Ridge Model}
+pred_ridge<-predict(new_ridge,xx,type = "class")
+confusionMatrix(pred_ridge,test$class)
+```
+#Elastic Net Regularization
+* It is a generalized version of the three regularizations
+* It is like alpha x Lasso +(1-alpha) x Ridge
+* The value of alpha =0.5 will equalizes the effect.
+* alpha can vary between 0 and 1
+```{r Building Elastic Net Model}
+elastic=glmnet(x,train$class,family = "multinomial",type.multinomial = "grouped",alpha = 0.5)
+```
+##Cross Validated Model
+Cross validated model for lambda min 
+```{r Cross Validated Elastic Net}
+cv.elastic<-cv.glmnet(x,train$class,type.measure="class",grouped=TRUE,parallel=TRUE,nfolds=5,family="multinomial",alpha=0.5)
+```
+Re Run the model with lambda min
+```{r Redo Elastic Net with Lambda Min}
+new_elastic=glmnet(x,train$class,family = "multinomial",type.multinomial = "grouped",alpha = 0,lambda =cv.elastic$lambda.min )
+```
+##Getting the Elastic Net attributes
+Get the coefficients for elastic net regression
+```{r Coefficients for Elastic Net}
+coef_elastic=coef(new_elastic,s = cv.elastic$lambda.min)
+ ind <- which(coef(new_elastic,s = cv.elastic$lambda.min)[[1]] != 0)
+
+ df_elastic <- data.frame(
+        feature=rownames(coef(new_elastic, s=cv.elastic$lambda.min)[[1]])[ind],
+        coeficient=(coef(new_elastic, s=cv.elastic$lambda.min)[[1]])[ind])
+ df_elastic
+```
+#Prediction on Elastic Net Regression 
+```{r Prediction for Elastic Net Regression}
+pred_elastic<-predict(new_elastic,xx,type = "class")
+confusionMatrix(pred_elastic,test$class)
+```
+#Try for Various alpha all the best!(NOT GRADED)
+For various values of alpha try the models and compare the accuracies (Try it not graded )
+```{r Do it for your Self}
+
+```
+

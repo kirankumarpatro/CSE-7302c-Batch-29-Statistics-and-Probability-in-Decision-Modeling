@@ -1,0 +1,410 @@
+---
+title: "Predicting the Prices of Homes in Boston"
+author: "Multiple Linear Regression INSOFE Lab Session"
+date: "18 June 2017"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+---
+
+**NOTE** Before starting this assignment please remember to clear your environment, you can do that by running the following code chunk
+
+```{r}
+
+rm(list = ls(all=TRUE))
+
+```
+
+# Agenda 
+
+* Get the data
+
+* Ask an interesting question
+
+* Explore the data
+
+* Data Pre-processing
+
+* Model the data
+
+* Evaluation
+
+
+# Reading & Understanding the Data
+
+* Make sure the dataset is located in your current working directory
+
+```{r}
+
+
+
+```
+
+* Use the str() function to get a feel for the dataset.
+
+```{r}
+
+
+
+```
+
+* The dataset has 506 rows and 14 columns.
+
+* The column/variable names' explanation is given below:
+
+1) __CRIM :__ Per capita Crime rate by town
+
+2) __ZN :__ Proportion of residential land zoned for lots over 25,000 sq.ft.
+
+3) __INDUS :__ Proportion of non-retail business acres per town
+
+4) __CHAS :___ Charles River dummy variable (= 1 if tract bounds river; 0 otherwise)
+
+5) __NOX :__ nitric oxides concentration (parts per 10 million)
+
+6) __RM :__ average number of rooms per dwelling
+
+7) __AGE :__ proportion of owner-occupied units built prior to 1940
+
+8) __DIS :__ weighted distances to five Boston employment centres
+
+9) __RAD :__ index of accessibility to radial highways
+
+10) __TAX :__ full-value property-tax rate per $10,000
+
+11) __PTRATIO :__ pupil-teacher ratio by town
+
+12) __B :__ 1000(Bk - 0.63)^2 where Bk is the proportion of African-Americans by town
+
+13) __LSTAT :__ Percentage of the population in the lower economic status 
+
+14) __MEDV  :__ Median value of owner-occupied homes in multiples of $1000
+
+
+* Take a look at the data using the "head()" and "tail()" functions
+
+```{r}
+
+
+
+
+```
+
+
+# Ask and Explore interesting Questions
+
+1) __How does the proportion of African-Americans by town relate to the Median Value of owner-occupied homes?__
+
+2) __How does the nitric oxides concentration in ppm in the air relate to the Median Value of owner-occupied homes?__
+
+3) ????
+
+4) ????
+
+* So, let's get ready to predict the prices of houses!!
+
+# Data Pre-Processing - I
+
+## Missing Values imputation
+
+* Find out the number of missing values in the dataset
+
+* Impute the missing values using the "centralImputation()" function from the DMwR package
+
+```{r}
+
+
+
+
+```
+
+# Exploratory Analysis
+
+## Summary Statistics
+
+* Understand the distribution of various variables in the datset using the "summary()" function
+
+```{r}
+
+
+
+```
+
+## Scatter Plots
+
+* A few bi-variate relationships are plotted below, but you are encouraged to explore the dataset in more detail
+
+```{r fig.height= 8, fig.width = 9}
+
+
+
+
+```
+
+
+
+## Correlation Plot
+
+* Let's have a look at the various correlations between the variables in the dataset
+
+```{r fig.height= 8, fig.width = 9}
+
+
+
+
+```
+
+
+# Data Pre-processing - II
+
+* Today we will standardize the data __after__ splitting the data into train and test sets
+
+## Train/Test Split
+
+* 70/30 - Train/Test split
+
+```{r}
+
+
+
+```
+
+
+## Standardizing the Data
+
+* We will use the Caret pakcage to standardize the data after the split using the __"preProcess()"__ function
+
+* It saves the metrics such as mean and standard deviation used for calculating the standardized value by creating a model object
+
+* We can then use the model object in the __"predict()"__ function to standardize any other unseen dataset with the same distribuiton and variables
+
+```{r}
+
+library(caret)
+
+# The "preProcess()" function creates a model object required for standardizing unseen data
+
+# Do not standardize the target variable
+
+
+
+# The predict() function is used to standardize any other unseen data
+
+
+
+```
+
+
+# Modelling the Data
+
+## Basic Model
+
+* The "." adds all the variables other than the response variable while building the model.
+
+```{r}
+
+
+
+
+
+```
+
+## stepAIC model
+
+* "stepAIC()" is a function in the MASS package
+
+* stepAIC uses AIC (Akaike information criterion) to either drop variables ("backward" direction) or add variables ("forward" direction) from the model
+
+```{r}
+
+
+# Here we use the "backward" direction as model_basic used all the variables to build the regression model
+
+
+```
+
+## Modifying the Model with the VIF
+
+**Variance Inflation Factor :**
+
+$$VIF_{k} = \dfrac{1}{1 - R_{k}^2}$$
+
+$R_{k}^2$ is the R^2-value obtained by regressing the kth predictor on the remaining predictors. VIF gives us an idea of multi-collinearity
+
+* Every explanatory variable would have a VIF score
+
+* A VIF > 4 means that there are signs of multi-collinearity and anything greater than 10 means that an explanatory variable should be dropped
+
+* We use the "vif()" function from the car package. 
+
+```{r}
+
+
+
+```
+
+* After applying the stepAIC, the VIF values have slightly reduced, but the variables "RAD" and "TAX" have VIF values higher than 4
+
+* Let's take a look at the correlation between the "RAD" and "TAX" variables
+
+```{r}
+
+
+
+```
+
+* The correlation coefficient is extremely high between the "RAD" and "TAX" variables
+
+* let's now remove the "TAX" variable, as it is the lesser significant of the two
+
+* Build another model without the "TAX" variable, and take a look at the VIFs
+
+
+```{r}
+
+
+
+```
+
+
+# Evaluation and Selection of Model
+
+## Picking the Right Model
+
+* The third model built after verifying the vif scores has a similar adjusted R^2 score compared to the previous models with significantly lower no. of explanatory variables and inter-variable interactions.
+
+* The VIF values of the predictors in the third model are lower when compared to the the other two models
+
+* Due to the above two reasons we pick the third model
+
+# Communication
+
+## Prediction
+
+Predict the Housing prices of the unseen boston housing data, using the chosen model.
+
+```{r}
+
+
+```
+
+## Performance Metrics
+
+Once we choose the model we have to report performance metrics on the test data. We are going to report three error metrics for regression.
+
+### Error Metrics for Regression
+
+* Mean Absolute Error (MAE)
+
+Create a function called mae that measures the mean absolute error, given the actual and predicted points.
+
+$$MAE = \dfrac{1}{n}\times|\sum_{i = 1}^{n}y_{i} - \hat{y_{i}}|$$
+
+```{r}
+
+
+
+```
+
+* Mean Squared Error (MSE)
+
+Create a function called mse that measures the mean squared error, given the actual and predicted points.
+
+$$MSE = \dfrac{1}{n}\times(\sum_{i = 1}^{n}y_{i} - \hat{y_{i}})^2$$
+
+```{r}
+
+
+
+```
+
+* Root Mean Squared Error (RMSE)
+
+Create a function called rmse that measures the root mean squared error, given the actual and predicted points.
+
+$$RMSE = \sqrt{\dfrac{1}{n}\times(\sum_{i = 1}^{n}y_{i} - \hat{y_{i}})^2}$$
+
+```{r}
+
+
+
+```
+
+
+* Mean Absolute Percentage Error (MAPE)
+
+Create a function called mae that measures the mean absolute error, given the actual and predicted points.
+
+$$MAPE = \dfrac{100}{n}\times\mid\dfrac{\sum_{i = 1}^{n}y_{i} - \hat{y_{i}}}{y_{i}}\mid$$
+
+```{r}
+
+
+
+
+```
+
+
+### Report Performance Metrics
+
+* Report performance metrics obtained by using the chosen model on the test data
+
+```{r}
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

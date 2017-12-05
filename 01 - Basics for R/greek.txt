@@ -1,0 +1,9 @@
+name	class
+Alpha	12
+Beta	3
+Gamma 	5
+Delta	10
+Eta	7
+Phi	8
+Rho	19
+

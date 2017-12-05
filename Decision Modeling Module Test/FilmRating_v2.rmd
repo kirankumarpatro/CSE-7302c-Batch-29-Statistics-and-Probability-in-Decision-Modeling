@@ -1,0 +1,195 @@
+---
+---
+title: "FilmRating"
+author: "Haroon"
+date: "July 20, 2017"
+output: slidy_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Load Data and check the Structure
+
+```{r}
+
+rm(list = ls(all=TRUE))
+dirpath_local <- "C:/Users/welcome/Desktop/New folder/20170722_Batch 29_CSE 7302_LinReg_LogReg_CUTe";
+setwd(dirpath_local)
+
+FilmData <- get(load("imdb_rotten_tom.Rdata"))
+str(FilmData)
+
+```
+
+#Check for Missing Data 
+
+```{r}
+library(DMwR)
+sum(is.na(FilmData))
+length(manyNAs(FilmData, 0.10) )
+
+```
+
+#Create target variable based on research
+
+```{r}
+
+FilmData$Awards<-ifelse(FilmData$imdb_rating < 7.1 , 0 , 1)
+
+
+```
+
+#Impute Missing data 
+
+```{r}
+
+
+#FilmData_O <- na.omit(FilmData)
+FilmData$title <- NULL
+FilmData$imdb_rating <- NULL
+FilmData$imdb_url <- NULL
+FilmData$rt_url <- NULL
+FilmData$director <- NULL
+FilmData$actor1 <- NULL
+FilmData$actor2 <- NULL
+FilmData$actor3 <- NULL
+FilmData$actor4 <- NULL
+FilmData$actor5 <- NULL
+FilmData$dvd_rel_day <- NULL
+FilmData$dvd_rel_year <- NULL
+FilmData$dvd_rel_month <- NULL
+
+sum(is.na(FilmData))
+FilmData_O <- na.omit(FilmData)
+
+```
+
+#Visualization for finding the Correlation between Critics and Audience Score with likelihood of movie winning an oscar. Also checking any possible relation linked to Month or year
+
+```{r}
+
+library(ggplot2)          
+ggplot(FilmData_O, aes(FilmData_O$thtr_rel_month, FilmData_O$critics_score)) + geom_point(aes(color = FilmData_O$genre)) + scale_x_continuous("thtr_rel_month", breaks = seq(0,0.35,0.05))+  theme_bw() 
+
+ggplot(FilmData_O, aes(FilmData_O$thtr_rel_year, FilmData_O$critics_score)) + geom_point(aes(color = FilmData_O$genre)) + scale_x_continuous("thtr_rel_year", breaks = seq(0,0.35,0.05))+  theme_bw() 
+
+ggplot(FilmData_O, aes(FilmData_O$audience_score, FilmData_O$critics_score)) + geom_point(aes(color = FilmData_O$Awards)) + scale_x_continuous("audience_score", breaks = seq(0,0.35,0.05))+  theme_bw()
+
+
+
+```
+
+# Segregating movies into Short and long 
+
+```{r}
+
+FilmData_O$RT<-rep(0,nrow(FilmData_O))
+for (i in 1:nrow(FilmData_O)){
+ if (FilmData_O$runtime[i]>=90){ 
+   FilmData_O$RT[i]=1
+  }
+  else {
+   FilmData_O$RT[i]=0
+  }
+}
+
+
+
+```
+
+#Split the Data into Train and Test data
+
+```{r}
+library(caret)
+set.seed(786)
+
+train_rows <- createDataPartition(FilmData_O$Awards, p = 0.7, list = F)
+
+train_data <- FilmData_O[train_rows, ]
+
+test_data <- FilmData_O[-train_rows, ]
+
+```
+
+#Standardize the Data post split
+
+```{r}
+
+pre_proc <- preProcess(train_data[, setdiff(names(train_data),"Awards")])
+train_data=predict(pre_proc,train_data)
+test_data=predict(pre_proc,test_data)
+
+```
+
+# Build the model
+
+```{r}
+
+log_reg <- glm(Awards~ title_type + genre + RT + imdb_num_votes + critics_rating + audience_rating + audience_score + best_pic_nom + best_pic_win + best_actor_win + best_actress_win + best_dir_win + top200_box , data = train_data, family = binomial)
+
+log_reg1 <- glm(Awards~ title_type + genre + RT + imdb_num_votes + critics_rating + audience_rating + audience_score + best_pic_nom + best_pic_win + best_actor_win + best_actress_win + best_dir_win + top200_box + thtr_rel_year + thtr_rel_month + thtr_rel_day , data = train_data, family = binomial)
+
+```
+
+# Check summary of both the models
+
+```{r}
+summary(log_reg)
+summary(log_reg1)
+
+
+```
+
+#Get a list of predictions (probability scores) using the predict() function
+
+```{r}
+
+prob_train <- predict(log_reg, type = "response")
+
+```
+
+
+```{r}
+library(ROCR)
+pred <- prediction(prob_train, train_data$Awards)
+
+```
+
+#Extract performance measures and Extract the AUC score of the ROC curve and store it in a variable named "auc"
+
+```{r}
+
+perf <- performance(pred, measure="tpr", x.measure="fpr")
+plot(perf, col=rainbow(10), colorize=T, print.cutoffs.at=seq(0,1,0.05))
+perf_auc <- performance(pred, measure="auc")
+auc <- perf_auc@y.values[[1]]
+
+print(auc)
+
+```
+
+# Cut off Value selected based on ROC curve
+
+```{r}
+
+prob_test <- predict(log_reg, test_data, type = "response", se.fit=FALSE)
+
+preds_test <- ifelse(prob_test > 0.2, 1, 0)
+
+```
+
+
+#Confusion Matrix 
+
+```{r}
+
+library(caret)
+
+# Using the argument "Positive", we can get the evaluation metrics according to our positive referene level
+
+confusionMatrix(preds_test, test_data$Awards, positive = '1')
+
+```
+

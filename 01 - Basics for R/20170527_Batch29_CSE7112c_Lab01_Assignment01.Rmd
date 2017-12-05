@@ -1,0 +1,105 @@
+---
+title: 'B29 Lab Activity -1 27th May 2017 '
+output:
+  html_document: default
+  author: "Your Name"
+  html_notebook: default
+---
+##### 1. Clear workspace. remove all objects
+```{r}
+rm(list=ls(all=TRUE))
+
+```
+
+##### 2. Set working directory. 
+```{r}
+setwd("C:\\Users\\welcome\\Downloads\\27052017_A1-kirankumarpatroinsofe-master\\27052017_A1-kirankumarpatroinsofe-master")
+```
+
+
+##### 3. Read file Grade2.csv. Call this object mydata
+```{r}
+mydata <- read.csv("Data/Grade2.csv",header=T,sep=",")
+dim(mydata)
+```
+
+
+##### 4. Create a new variable which is sum of Math2 and Science2. scores. Call it math_science
+```{r}
+math_science <- rowSums(mydata[,c(3,4)])
+math_science
+```
+
+##### 5.	Check number of rows
+```{r}
+nrow(mydata)
+```
+
+
+##### 6. store this data frame in anoter variable. call it mydata2
+```{r}
+mydata2 <- mydata
+mydata2
+```
+
+##### 7. Student ID is not useful for analysis, so remove it from mydata2
+```{r}
+mydata2$Student.id <- NULL
+mydata2
+```
+
+##### 8. Take subset of mydata2 so that only those students having Math2 score of greater than 50 will be listed
+```{r}
+data1 <- subset(mydata2,Math2>50)
+data1
+```
+
+##### 9. Give math_science scores of those students who have less than 60 marks in English2
+```{r}
+mydata2 <- cbind(mydata2,math_science)
+mydata2
+data2 <- subset(mydata2, English2< 60,select=math_science)
+data2
+```
+
+##### 10. List rows where English2 marks are less than 60 or OverallPct2 marks are greater than 70
+```{r}
+data3 <- subset(mydata2, English2< 60 | OverallPct2> 70)
+data3
+```
+
+##### 11. Drop variable math_science from mydata2
+```{r}
+mydata2$math_science <- NULL
+mydata2
+```
+
+### Working with vectors
+
+##### 12. Store vector c(12,0,-1,49,22,15,18) in a variable x and get its length
+```{r}
+x <- c(12,0,-1,49,22,15,18)
+length(x)
+
+```
+
+##### 13. Give the elements in x which are greater than 20
+```{r}
+data4<-subset(x, x>20)
+data4
+```
+
+##### 14. Give elements in x which are greater than 15 and less than 30
+```{r}
+data4<-subset(x, x>15 & x<30)
+data4
+```
+
+##### 15. Find the index of the maximum and minimum element
+```{r}
+x <- c(12,0,-1,49,22,15,18)
+which.max(x)
+which.min(x)
+```
+
+

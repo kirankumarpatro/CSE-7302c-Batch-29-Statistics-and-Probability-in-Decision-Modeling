@@ -1,0 +1,308 @@
+---
+title: "Prediction of Patient Status using Voice Measurements"
+author: "INSOFE Lab Assignment on Logistic Regression"
+date: "1 July 2017"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+---
+
+**NOTE** Before starting this assignment please remember to clear your environment, you can do that by running the following code chunk
+
+```{r}
+
+rm(list = ls(all=TRUE))
+
+```
+
+# Agenda 
+
+* Get the data
+
+* Data Pre-processing
+
+* Build a model
+
+* Predictions
+
+* Communication
+
+
+# Reading & Understanding the Data
+
+* The "parkinsons_data.csv" dataset is composed of a range of biomedical voice measurements. Each column in the table is a particular voice measure, and each row corresponds one of 195 voice recordings.
+
+* The dataset has 195 rows and 23 columns. 
+
+* The column/variable names' explanation is given below:
+
+1) __MDVP:Fo(Hz) :__ Average vocal fundamental frequency
+
+2) __MDVP:Fhi(Hz) :__ Maximum vocal fundamental frequency
+
+3) __MDVP:Flo(Hz) :__ Minimum vocal fundamental frequency
+
+4) __MDVP:Jitter(%); MDVP:Jitter(Abs); MDVP:RAP; MDVP:PPQ; Jitter:DDP :___ Several measures of variation in fundamental frequency
+
+5) __MDVP:Shimmer; MDVP:Shimmer(dB); Shimmer:APQ3; Shimmer:APQ5; MDVP:APQ; Shimmer:DDA :__ Several measures of variation in amplitude
+
+6) __NHR; HNR :__ Two measures of ratio of noise to tonal components in the voice
+
+7) __status :__ Health status of the subject (Parkinson's) - Positive, (Normal) - Healthy
+
+8) __RPDE; D2 :__  Two nonlinear dynamical complexity measures
+
+9) __DFA :__ Signal fractal scaling exponent
+
+10) __spread1; spread2; PPE :__ Three nonlinear measures of fundamental frequency variation
+
+* Make sure the dataset is located in your current working directory and read in the data
+
+```{r}
+
+setwd("C:/Users/welcome/Downloads/20170701-batch29-cse7302c-logisticregression-kirankumarpatroinsofe-master/20170701-batch29-cse7302c-logisticregression-kirankumarpatroinsofe-master")
+
+patient.data=read.csv("parkinsons_data.csv",header = T)
+
+```
+
+* Use the str() function to get a feel for the dataset.
+
+```{r}
+
+str(patient.data)
+
+```
+
+
+* Take a look at the data using the "head()" and "tail()" functions
+
+```{r}
+
+head(patient.data)
+tail(patient.data)
+
+```
+
+* Are there any missing values in the dataset?
+
+```{r}
+
+sum(is.na(patient.data))
+
+```
+
+# Data Pre-processing
+
+## Train/Test Split
+
+* Split the data 70/30 into train and test sets, using __Stratified Sampling__ by setting the seed as "786"
+
+```{r}
+library(caret)
+set.seed(786)
+
+train_rows <- createDataPartition(patient.data$status, p = 0.7, list = F)
+
+train_data <- patient.data[train_rows, ]
+
+test_data <- patient.data[-train_rows, ]
+str(patient.data)
+
+```
+
+# Build a model
+
+## Basic Logistic Regression Model
+
+* Use the glm() function to build a basic model
+
+* Build a model using all the variables, excluding the response variable, in the dataset
+
+```{r}
+model1=glm(status~.,data=train_data,family = binomial)
+
+
+```
+
+* Get the summary of the model and understand the output
+
+```{r}
+
+summary(model1)
+
+```
+
+## Create an ROC Curve
+
+1) Get a list of predictions (probability scores) using the predict() function
+
+```{r}
+
+prob_train=predict(model1,type = "response")
+
+```
+
+
+2) Using the ROCR package create a "prediction()" object
+
+```{r}
+library(ROCR)
+pred=prediction(prob_train,train_data$status)
+
+
+```
+
+
+3) Extract performance measures (True Positive Rate and False Positive Rate) using the "performance()" function from the ROCR package
+
+```{r}
+
+perf=performance(pred, measure="tpr", x.measure="fpr")
+
+```
+
+
+4) Plot the ROC curve using the extracted performance measures (TPR and FPR)
+
+```{r}
+
+plot(perf, col=rainbow(10), colorize=T, print.cutoffs.at=seq(0,1,0.05))
+
+```
+
+* Extract the AUC score of the ROC curve and store it in a variable named "auc"
+
+```{r}
+
+perf_auc =  performance(pred, measure="auc")
+
+
+auc = perf_auc@y.values[[1]]
+
+print(auc)
+
+
+```
+
+
+## Choose a Cutoff Value
+
+* Based on the trade off between TPR and FPR depending on the business domain, a call on the cutoff has to be made.
+
+```{r}
+
+### Write your answer here
+cut off =0.8
+
+
+```
+
+
+## Predictions on test data
+
+* After choosing a cutoff value, predict the class labels on the test data using our model
+
+```{r}
+
+prob_test <- predict(model1, test_data, type = "response")
+
+preds_test <- ifelse(prob_test > 0.8, "Parkinson's", "Normal")
+
+
+```
+
+# Evaluation Metrics for classification
+
+## Manual Computation
+
+### Confusion Matrix
+
+* Create a confusion matrix using the table() function
+
+```{r}
+test_data_labs <- test_data$status
+
+conf_matrix <- table(test_data_labs, preds_test)
+
+print(conf_matrix)
+
+
+```
+
+### Specificity
+
+* Calculate the Specificity
+
+* The Proportion of correctly identified negatives by the test/model.
+
+$${Specificity} = \frac{Number~of~True~Negatives}{Number~of~True~Negatives + Number~of~False~Positives}$$
+
+```{r}
+
+specificity <- conf_matrix[1, 1]/sum(conf_matrix[1, ])
+
+print(specificity)
+
+
+```
+
+
+### Sensitivity
+
+* Calculate the Sensitivity
+
+* The Proportion of correctly identified positives by the test/model.
+
+$${Sensitivity} = \frac{Number~of~True~Positives}{Number~of~True~Positives + Number~of~False~Negatives}$$
+
+```{r}
+
+
+specificity <- conf_matrix[1, 1]/sum(conf_matrix[1, ])
+
+print(specificity)
+```
+
+### Accuracy
+
+* Calculate the Accuracy
+
+* The Proportion of correctly identified psotivies/negatives in the entire population by the test/model
+
+$${Accuracy} = \frac{Number~of~True~Positives +Number~of~True~Negatives}{Number~Of~Subjects~in~the~Population}$$
+
+```{r}
+
+accuracy <- sum(diag(conf_matrix))/sum(conf_matrix)
+
+print(accuracy)
+
+```
+
+## Automated Computation through Caret
+
+* Use the caret package to compute the evaluation metrics
+
+* Mention your reference positive class as an argument to the confusionMatrix() function
+
+```{r}
+library(caret)
+
+confusionMatrix(preds_test, test_data$status, positive = "Parkinson's")
+
+
+```
+
+
+
+
+
+
+
+
+
+
+

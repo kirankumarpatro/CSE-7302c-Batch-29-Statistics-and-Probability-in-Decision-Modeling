@@ -1,0 +1,434 @@
+---
+title: "20170527_Batch29_CSE7112c_R_lab01_Basics03"
+author: "Insofe"
+date: "May 27, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Set Working Directory 
+
+```{r Setwd}
+setwd("F:\\Academics\\Batch24\\20160107_Batch24_CSE7112c_Data Pre Processing Using R_Lab01\\INPUTS")
+```
+
+## Getting Data into R 
+
+Read Grade1.csv and Grade2.csv into R
+
+```{r Reading Input Files}
+Grade1<-read.csv("Grade1.csv",header=T,sep=",")
+Grade2<-read.csv("Grade2.csv",header=T,sep=",")
+print (Grade1)
+
+```
+
+
+##To get the dimensions of the data (number of records and number of variables)
+
+
+```{r}
+dim(Grade1)
+```
+
+## To get the structure and summary of the data
+```{r}
+str(Grade1)
+summary(Grade1)
+```
+
+## To view first 6 records of the Dataframe 
+```{r}
+head(Grade1)
+```
+
+## To view  last 6 records of the Dataframe
+```{r}
+tail(Grade1)
+```
+
+## Type Conversions 
+
+We observed above that the structure for student.id is numeric.Does it make sense to have statistical summary of it
+When data is loaded in R, by default R assigns a data type to it. If we find it inappropriate we manually change it
+```{r}
+Grade1$Student.id<-as.character(Grade1$Student.id)
+print (typeof(Grade1$Student.id))
+```
+
+Similarly if we want to convert a numeric value to factor(ordinal) we use as.factor as we have used above.
+Converting student.id to numeric again
+```{r}
+Grade1$Student.id<-as.numeric(Grade1$Student.id)
+print (typeof(Grade1$Student.id))
+```
+
+## Merging Dataframes 
+
+We have to get grades from both Datasets into one . We observe that student.id is common in both
+```{r}
+mergeddata <- merge(Grade1,Grade2,by=c("Student.id"),all=TRUE)
+head(mergeddata)
+```
+
+## Data Exploration Methods
+
+First Step is to understand Structure and summary of the Data 
+
+For example consider dataset "baseball" from plyr library 
+
+```{r}
+library(plyr)
+attach(baseball)
+data<-baseball
+str(data) 
+summary(data)
+
+```
+
+#Do necessary type conversions
+We can consider "teams" as a factor ao that we can compare runs batted and home runs for teams
+
+
+```{r}
+data$team<-as.factor(data$team)
+str(data$team)
+```
+
+
+## Aggretaion of data for better Insights
+
+For Example: Get sum of rbi (runs batted in) per team 
+
+Option1 : Using tapply 
+
+```{r}
+tapply(data$rbi,data$team,FUN= sum,na.rm=T)
+```
+
+Option2: Using aggregate function 
+```{r}
+aggregate(data$rbi,by=list(data$team),FUN=sum,na.rm=T)
+```
+
+Option3: Using ddply 
+
+```{r}
+ddply(data,.(team),summarize, runs=sum(rbi,na.rm=T))
+```
+
+## Working with the data 
+There are several steps that we would follow for data preprocessing steps. These are not exhaustive but according to the need we may use only some of these or sometimes we need to do a bit extra processing
+
+Understanding the data variables-- what are their types
+
+
+```{r}
+dataMerged <- read.csv(file="dataMerged.csv",header=TRUE, sep=",")
+
+str(dataMerged)
+head(dataMerged)
+tail(dataMerged)
+names(dataMerged)
+summary(dataMerged)
+
+```
+
+Data type conversions, if while loading the data the type taken is not appropriate
+
+```{r}
+dataMerged$family <- as.factor(dataMerged$family)
+dataMerged$edu <- as.factor(dataMerged$edu)
+dataMerged$cc <- as.factor(dataMerged$cc)
+dataMerged$cd <- as.factor(dataMerged$cd)
+dataMerged$securities <- as.factor(dataMerged$securities)
+dataMerged$online <- as.factor(dataMerged$online)
+dataMerged$loan <- as.factor(dataMerged$loan)
+str(dataMerged)
+```
+
+
+## Check for Missing data 
+Count the number of missing values
+```{r}
+sum(is.na(dataMerged))
+```
+## Treating Missing Data 
+
+Option1. Omit all records with NA values
+
+```{r}
+data1<-na.omit(dataMerged)  
+head(data1)
+data2<-dataMerged[complete.cases(dataMerged),]  
+head(data2)
+```
+
+Identify rows where more than 20% attributes are missing
+
+```{r}
+library(DMwR)
+length(manyNAs(dataMerged, 0.2) )
+```
+
+
+Option2. If the missing values are a few, then we can impute these missing values
+
+Central Imputation 
+```{r}
+library(DMwR)
+data3<-centralImputation(dataMerged) 
+sum(is.na(data3))
+head(data3)
+
+```
+
+KNN Imputation 
+
+```{r}
+data4<-knnImputation(dataMerged,scale=T,k=5) #KNN Imputation
+sum(is.na(data4))
+head(data4)
+```
+
+## Standardization of the Data
+
+Subsetting categorical and numerical data 
+```{r}
+
+Data_NumAtr<-subset(data2,select=c(age,exp,inc,mortgage,ccAvg))
+Data_CatAtr<-subset(data2,select=-c(age,exp,inc,mortgage,ccAvg))
+
+```
+
+Load Library required for standardization 
+```{r}
+library(vegan)
+
+```
+
+Option1 : Using Range Method 
+```{r}
+dataStd. <- decostand(Data_NumAtr,"range") 
+summary(dataStd.)
+```
+
+Option2 : Using  Z score method
+```{r}
+dataStd1. <- decostand(Data_NumAtr,"standardize")
+summary(dataStd1.)
+
+```
+
+## Discretizing the data
+
+Load Library required for standardization 
+```{r}
+library(infotheo)
+
+```
+
+Before binning check the summary of data once (Using imputed data from above steps) 
+```{r}
+summary(data2)
+```
+
+Option1: Equal-frequency (equi-depth) binning: use intervals containing equal number of values
+
+
+```{r cars}
+IncomeBin <- discretize(data2$inc, disc="equalfreq",nbins=4)
+table(IncomeBin)
+
+```
+
+Option2: Equal-interval (equi-width) binning: splits the whole range of numbers in intervals with equal size.
+```{r}
+IncomeBin <- discretize(data2$inc, disc="equalwidth")
+table(IncomeBin)
+
+```
+
+Exploring the Binned Data
+
+Returns  min and max of each bin respectively:It is subsetting the data bin wise and returns min/max of each subset
+
+```{r}
+tapply(data2$inc,IncomeBin,min)
+tapply(data2$inc,IncomeBin,max)
+```
+
+option3:  Manual binning
+some times we have to do manual binning also,it depends on type of problem and data.
+We are creating a new column and binning  each person based on their age
+```{r}
+data2$ageNew<-rep(0,nrow(data2))
+for (i in 1:nrow(data2)){
+ if (data2$age[i]>=45){ 
+   data2$ageNew[i]=2
+  }
+  else {
+   data2$ageNew[i]=1
+  }
+}
+table(data2$ageNew)
+```
+
+
+##Creating dummy variables 
+
+Load Library required for creating dummies
+```{r}
+library(dummies)
+
+```
+
+
+It is one of the data preprocessing step where you want to convert factor variable to numerical without actually changing the original context.Some machine learning algorithms do accept factor 
+but it is a good practice to create a dummy variable for a factor.
+
+```{r}
+
+str(data2)
+EduDummyVars<-dummy(data2$edu)
+```
+
+
+Viewing Dummy variables
+```{r}
+head(EduDummyVars,8)
+```
+
+Binding dummy varible to dataframe 
+```{r}
+data2<-data.frame(data2,EduDummyVars)
+str(data2)
+
+```
+Drop original factor variable
+
+```{r}
+data2$edu<-NULL
+str(data2)
+
+```
+
+##Reshaping the data   
+It is similar to pivot in excel where we see data in different dimensions by doing various operataions
+here we use it on  CustomerDat file whic is Transcation data of customers of a store,
+We would like to know the revenue(Total cost) generated by year and by quarter.
+
+Load Library required for reshaping the Data
+```{r}
+library(reshape2)
+
+```
+
+
+
+```{r}
+Cust<-read.csv("CustTransDat.csv",header=T,sep=",")
+head(Cust)
+```
+
+Reshape the Data such that it gives aggregate costs insights for every year,quarter and Month Combination.
+
+```{r}
+library(reshape2)
+data2<-dcast(Cust,Quarter+Month~Year,fun.aggregate = sum,value.var="Cost")
+head(data2)
+
+```
+
+Melt the Data frmae 
+
+```{r}
+meltdata<-melt(data=data2,id=c("Quarter","Month"))
+head(meltdata)
+```
+
+Another example
+
+```{r}
+Grade1=read.csv("Grade1.csv")
+head(Grade1)
+```
+
+
+```{r}
+meltdata<-melt(data=Grade1,id="Student.id")
+head(meltdata)
+
+```
+
+aggregate the melted data based on subject and gender. This is also called the wide format.
+```{r}
+data2<-dcast(data=meltdata,Student.id~variable,value="value") 
+head(data2)
+```
+
+
+```{r}
+data3<-dcast(data=meltdata,variable~Student.id,value="value",fill=0) 
+head(data3)
+#Observe the difference in data2 and data3
+
+```
+
+##Visuliaztions 
+
+Attach the Data
+
+```{r}
+data <- dataMerged
+attach(data)
+names(data)
+
+```
+
+
+Plot a Histogram of Income 
+
+```{r}
+#Histogram
+hist(inc, col="green", xlab="Income",main="Histogram of Income")
+
+
+```
+
+Plot a Histogram of Income and Age on a single frame
+
+```{r}
+par(mfrow=c(1,2))
+hist(age, col="green", xlab="Age",main="Histogram of Age")
+hist(exp, col="blue", xlab="Experience",main="Histogram of Experience")
+
+```
+
+Plot a boxplot of Income for various levels of education 
+
+```{r}
+#BoxPlot
+par(mfrow=c(1,2))
+boxplot(inc, main="Income distribution")
+abline(h = mean(inc), lty=2)
+
+boxplot(inc~edu, main="Variation of income as a function of education", 
+        xlab="Education", ylab="Income")
+abline(h = mean(inc))
+
+```
+
+Plot a Bar plot of Number customers who are loan defaulted and who are not 
+
+```{r}
+#BarPlot
+par(mfrow=c(1,1))
+barplot(table(data$loan), main="Number of customer in each class")
+
+```
+
+

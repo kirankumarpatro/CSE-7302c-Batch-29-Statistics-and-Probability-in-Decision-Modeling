@@ -1,0 +1,199 @@
+---
+title: "Mushroom Classification Based on Naive Bayes"
+output:
+  html_document:
+    toc_depth: '3'
+  html_notebook:
+    toc_depth: 3
+    toc_float: yes
+---
+
+```{r}
+#     This data set includes descriptions of hypothetical samples
+#     corresponding to 23 species of gilled mushrooms.
+#     Each species is identified as
+#     definitely edible, definitely poisonous, or of unknown edibility #and
+#     not recommended.  This latter class was combined with the #poisonous
+#     one.  The Guide clearly states that there is no simple rule for
+#     determining the edibility of a mushroom; no rule like ``leaflets
+#     three, let it be'' for Poisonous Oak and Ivy.
+#     Attribute Information: (classes: edible=e, poisonous=p)
+#      1. cap-shape:bell=b,conical=c,convex=x,flat=f, 
+#                                   knobbed=k,sunken=s
+#      2. cap-surface:              #fibrous=f,grooves=g,scaly=y,smooth=s
+#      3. cap-color:                     #brown=n,buff=b,cinnamon=c,gray=g,green=r,
+#                                   #pink=p,purple=u,red=e,white=w,yellow=y
+#      4. bruises?:                 bruises=t,no=f
+#      5. odor:                     #almond=a,anise=l,creosote=c,fishy=y,foul=f,
+#                                   musty=m,none=n,pungent=p,spicy=s
+#      6. gill-attachment:          #attached=a,descending=d,free=f,notched=n
+#      7. gill-spacing:             close=c,crowded=w,distant=d
+#      8. gill-size:                broad=b,narrow=n
+#      9. gill-color:               #black=k,brown=n,buff=b,chocolate=h,gray=g,
+#                                   #green=r,orange=o,pink=p,purple=u,red=e,
+#                                   white=w,yellow=y
+#     10. stalk-shape:              enlarging=e,tapering=t
+#     11. stalk-root:               bulbous=b,club=c,cup=u,equal=e,
+#                                   rhizomorphs=z,rooted=r,missing=?
+#     13. stalk-surface-below-ring: fibrous=f,scaly=y,silky=k,smooth=s
+#     14. stalk-color-above-ring:   #brown=n,buff=b,cinnamon=c,gray=g,orange=o,
+#                                   pink=p,red=e,white=w,yellow=y
+#     12. stalk-surface-above-ring: fibrous=f,scaly=y,silky=k,smooth=s
+#     15. stalk-color-below-ring:   #brown=n,buff=b,cinnamon=c,gray=g,orange=o,
+#                                   pink=p,red=e,white=w,yellow=y
+#     16. veil-type:                partial=p,universal=u
+#     17. veil-color:               brown=n,orange=o,white=w,yellow=y
+#     18. ring-number:              none=n,one=o,two=t
+#     19. ring-type:                #cobwebby=c,evanescent=e,flaring=f,large=l,
+#                                   #none=n,pendant=p,sheathing=s,zone=z
+#     20. spore-print-color:        #black=k,brown=n,buff=b,chocolate=h,green=r,
+#                                   orange=o,purple=u,white=w,yellow=y
+#     21. population:               abundant=a,clustered=c,numerous=n,
+#                                   scattered=s,several=v,solitary=y
+#     22. habitat:                  #grasses=g,leaves=l,meadows=m,paths=p,
+#                                   urban=u,waste=w,woods=d
+#     
+# The class variable is to classify the mushroom as edible or poisonous
+#Consider edible as Positive and Poisnous as Negative
+```
+Write a code to clear your global environment
+```{r}
+rm(list=ls(all=TRUE))
+```
+Write a code to check the present working directory
+```{r}
+getwd()
+```
+Write a code to set the directory to where you have loaded the csv files
+```{r}
+#setwd("D:\\AcademicsWork\\Naive Bayes\\Students_Activity ")
+```
+Write the code for loading the required packages
+```{r}
+library(DMwR)
+library(e1071)
+
+```
+
+Write a code to read the csv file and name it as mushrooms
+```{r}
+mushrooms<-read.csv("Mushrooms.csv",header=T,sep=",",na.strings = c("?"))
+```
+Write a code to see 10 rows of the mushrooms data set from the top and bottom
+```{r}
+head(mushrooms,n=10)
+tail(mushrooms,n=10)
+```
+
+Write a code to know the names of the attributes & target
+```{r}
+names(mushrooms)
+```
+Write a code to get the summary of the data set and comment any observation made 
+```{r}
+summary(mushrooms)
+```
+Write a code to know the structure of the data set
+```{r}
+str(mushrooms)
+```
+
+```{r}
+mushrooms$veil.type<-NULL
+```
+
+
+Write a code to check the missing values in the data 
+```{r}
+sum(is.na(mushrooms))
+```
+Write a code to check the percentage of the NA values and comment yout observation
+```{r}
+NAPercentage=sum(is.na(mushrooms))/(nrow(mushrooms)*(ncol(mushrooms)))
+```
+Write a suitable imputation code & check again the missing values 
+```{r}
+mushrooms<-centralImputation(mushrooms)
+sum(is.na(mushrooms))
+```
+Write a code to understand the distribution of the levels in the total data set
+```{r}
+cat("\n Percentage of Edible=",length(which(mushrooms$Class=="e"))/nrow(mushrooms))
+cat("\n Percentage of Poisnous=",length(which(mushrooms$Class=="p"))/nrow(mushrooms))
+```
+split the data set into train and test 
+```{r}
+set.seed(123)
+rows=seq(1,nrow(mushrooms),1)
+trainRows=sample(rows,(70*nrow(mushrooms))/100)
+train =mushrooms[trainRows,]
+test = mushrooms[-trainRows,]
+```
+Write a code to study target distribution in train and test 
+```{r}
+cat("\n Percentage of Edible in train =",length(which(train$Class=="e"))/nrow(train))
+cat("\n Percentage of Poisnous in train=",length(which(train$Class=="p"))/nrow(train))
+cat("\n Percentage of Edible in test=",length(which(test$Class=="e"))/nrow(test))
+cat("\n Percentage of Poisnous in test=",length(which(test$Class=="p"))/nrow(test))
+```
+Write a code to plot the distribution of the target in train and test
+```{r}
+plot(train$Class,legend.text = levels(train$Class),main="Class Distribution in train",xlab="levels of Class",ylab="Frequency",col=c("Dark Green","Dark Red"))
+plot(test$Class,legend.text = levels(test$Class),main="Class Distribution in test",xlab="levels of Class",ylab="Frequency",col=c("Dark Green","Dark Red"))
+```
+Write a code to build a Naive Bayes Classifier on the data set
+```{r}
+model_nb<-naiveBayes(train$Class~.,train)
+```
+Check what the model_nb contains
+```{r}
+model_nb
+```
+Write a code to predict on the test data 
+```{r}
+pred<-predict(model_nb,test)
+```
+
+Write a code to build the confusion matrix and name it as conf_mat
+```{r}
+conf_mat=table(pred,test$Class)
+conf_mat
+```
+Write a code to find the T.P,T.N,F.P,F.N
+```{r}
+TP=conf_mat[1,1];  cat('\n TN=',TP)
+TN=conf_mat[2,2];  cat('\n TP=',TP)
+FP=conf_mat[1,2];  cat('\n FN=',FP)
+FN=conf_mat[2,1];  cat('\n FP=',FN)
+```
+
+Write a code to find the accuracy
+```{r}
+accuracy<-(TP+TN)/(TP+TN+FP+FN)
+cat(accuracy)
+```
+
+Write a code to check the Precision
+```{r}
+Precision<-(TP)/(TP+FP)
+cat(Precision)
+```
+
+Write a code to check the Sensitivity
+```{r}
+Sensitivity<-(TP)/(TP+FN)
+cat(Sensitivity)
+```
+
+Write a code for Specificity
+```{r}
+Specificity=(TN)/(TN+FP)
+cat(Specificity)
+```
+
+
+
+
+
+
+

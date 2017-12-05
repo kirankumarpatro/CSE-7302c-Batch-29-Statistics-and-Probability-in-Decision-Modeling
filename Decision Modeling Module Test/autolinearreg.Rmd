@@ -1,0 +1,322 @@
+---
+title: "Cute_Solution"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+Removing The Environment Variables
+
+```{r removal}
+rm(list = ls(all=TRUE))
+```
+
+Reading the DataSet
+
+
+```{r}
+
+Automobiles_Data<-read.csv("C:\\Users\\welcome\\Desktop\\New folder\\20170722_Batch 29_CSE 7302_LinReg_LogReg_CUTe\\Automobiles.csv",header = TRUE,sep = "")
+
+```
+
+To understand how the variables in the dataset are distributed
+
+```{r}
+
+str(Automobiles_Data)
+summary(Automobiles_Data)
+
+```
+
+
+
+
+Data Preprocessing
+
+
+
+
+2)Finding the Missing Values
+
+```{r}
+sum(is.na(Automobiles_Data))
+sum(is.na(Automobiles_Data$normalized_losses))
+sum(is.na(Automobiles_Data$price))
+
+```
+
+3)Removing the normalized_losses as it is having the maximum NA Values
+
+```{r}
+
+Automobiles_Data$normalized_losses<-NULL
+
+```
+
+4)Removing the Rows Having the NA Values as the price is target variable so taking NA values in Target may impact the Model
+
+
+```{r}
+
+Automobiles_Data<-Automobiles_Data[!is.na(Automobiles_Data$price),]
+
+```
+
+
+5)Checking Further Data Nulls
+
+```{r}
+sum(is.na(Automobiles_Data$stroke))
+```
+
+6)Imputing The Null Values
+
+```{r}
+library(DMwR)
+
+Automobiles_Data<-centralImputation(Automobiles_Data)
+
+sum(is.na(Automobiles_Data))
+
+```
+
+
+
+Finding the relation between predictors and Target Variable
+
+
+
+
+```{r}
+library(corrplot)
+
+str(Automobiles_Data)
+
+corr_matrix<-cor(Automobiles_Data[,c("wheel_base","length","width","height","curb_weight","engine_size","bore","stroke","compression_ratio","hoesepower","peak_rpm","city_mpg","highway_mpg","price")],use = "complete.obs")
+
+corrplot(corr_matrix,method = "number")
+
+```
+
+
+
+
+Split the data in to train and test
+```{r}
+set.seed(786)
+train_rows <- sample(x = 1:nrow(Automobiles_Data), size = 0.7*nrow(Automobiles_Data))
+train_data <- Automobiles_Data[train_rows, ]
+test_data <- Automobiles_Data[-train_rows, ]
+```
+
+
+Preprocessing or standadizing data
+```{r}
+library(caret)
+pre_proc <- preProcess(train_data[, setdiff(names(train_data),"price")])
+train_data=predict(pre_proc,train_data)
+test_data=predict(pre_proc,test_data)
+```
+
+Building the normal linear Model
+
+```{r}
+
+Model_train<-lm(log(price)~.,data = train_data)
+
+```
+
+```{r}
+summary(Model_train)
+```
+
+```{r}
+par(mfrow = c(2,2)) # Splits the plotting pane 2*2
+
+plot(Model_train)
+```
+
+```{r}
+pred=predict(Model_train,test_data[,setdiff(names(test_data),"price")])
+
+```
+
+```{r}
+summary(pred)
+```
+
+
+Error matrix
+```{r}
+regr.eval(test_data$price,exp(pred))
+```
+
+
+
+
+
+
+
+Using StepAIC model
+
+```{r}
+library(MASS)
+
+model_aic <- stepAIC(Model_train, direction = "both")
+```
+
+
+```{r}
+
+library(car)
+
+vif(Model_train)
+
+vif(model_aic)
+```
+
+
+```{r}
+summary(model_aic)
+```
+
+```{r}
+par(mfrow = c(2,2))
+
+plot(model_aic)
+```
+
+
+```{r}
+pred_aic=predict(model_aic,test_data)
+```
+
+```{r}
+summary(pred_aic)
+```
+
+
+Error matrix
+```{r}
+regr.eval(test_data$price,exp(pred_aic))
+```
+
+
+
+ 
+ 
+ 
+ 
+ using Lasoo model
+```{r}
+library(doParallel)
+registerDoParallel(8)
+```
+
+
+```{r}
+x=model.matrix(train_data$price~.,train_data)
+head(x)
+```
+
+
+```{r}
+library(glmnet)
+fit.lasso <- glmnet(x, train_data$price, family="gaussian", alpha=1)
+fit.ridge <- glmnet(x, train_data$price, family="gaussian", alpha=0)
+fit.elnet <- glmnet(x, train_data$price, family="gaussian", alpha=0.5)
+```
+
+
+
+
+```{r}
+fit.lasso.cv <- cv.glmnet(x,train_data$price, type.measure="mse", alpha=1, 
+                          family="gaussian",nfolds=10,parallel=TRUE)
+fit.ridge.cv <- cv.glmnet(x,train_data$price, type.measure="mse", alpha=0, 
+                          family="gaussian",nfolds=10,parallel=TRUE)
+fit.elnet.cv <- cv.glmnet(x,train_data$price, type.measure="mse", alpha=0.5, 
+                          family="gaussian",nfolds=10,parallel=TRUE)
+```
+
+
+```{r}
+for (i in 0:100) {
+    assign(paste("fit", i, sep=""), cv.glmnet(x,train_data$price, type.measure="mse", 
+                                              alpha=i/100,family="gaussian",nfolds=10,parallel=TRUE))
+}
+```
+
+
+```{r}
+par(mfrow=c(3,2))
+
+plot(fit.lasso, xvar="lambda")
+plot(fit10, main="LASSO")
+
+plot(fit.ridge, xvar="lambda")
+plot(fit10, main="Ridge")
+
+plot(fit.elnet, xvar="lambda")
+plot(fit10, main="Elastic Net")
+```
+
+```{r}
+c = coef(fit.lasso.cv,s=fit.lasso.cv$lambda.1se)
+  inds <- which(c!=0)
+  imp_attributes_lasso <- row.names(c)[inds]
+  imp_attributes_lasso<- imp_attributes_lasso[-c(grep("Intercept",imp_attributes_lasso))]
+  imp_attributes_lasso
+  
+  
+  c = coef(fit.ridge.cv,s=fit.ridge.cv$lambda.1se)
+  inds <- which(c!=0)
+  imp_attributes_ridge <- row.names(c)[inds]
+  imp_attributes_ridge<- imp_attributes_ridge[-c(grep("Intercept",imp_attributes_ridge))]
+   imp_attributes_ridge
+   
+   
+   c = coef(fit.elnet.cv,s=fit.elnet.cv$lambda.1se)
+  inds <- which(c!=0)
+  imp_attributes_elastic <- row.names(c)[inds]
+  imp_attributes_elastic<- imp_attributes_elastic[-c(grep("Intercept",imp_attributes_elastic))]
+   imp_attributes_elastic 
+   
+   
+   
+```
+
+```{r}
+x.test = model.matrix(test_data$price~.,test_data)
+y.test = test_data$price
+```
+
+
+
+```{r}
+pred.lasso.csv <- predict(fit.lasso.cv,x.test,s = fit.lasso.cv$lambda.min)
+
+pred.ridge.csv <- predict(fit.ridge.cv,x.test,s = fit.ridge.cv$lambda.min)
+
+pred.elnet.csv <- predict(fit.elnet.cv,x.test,s = fit.elnet.cv$lambda.min)
+
+regr.eval(y.test,pred.lasso.csv)
+```
+
+```{r}
+regr.eval(y.test,pred.ridge.csv)
+```
+```{r}
+regr.eval(y.test,pred.elnet.csv)
+```
+

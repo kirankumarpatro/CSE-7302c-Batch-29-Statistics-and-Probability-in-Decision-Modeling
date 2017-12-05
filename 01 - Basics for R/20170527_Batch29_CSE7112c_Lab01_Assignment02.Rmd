@@ -1,0 +1,95 @@
+---
+title: B29 Activity-2 27th May 2017"
+output: html_notebook
+author: Your Name
+---
+```{r}
+rm(list=ls(all=TRUE))
+```
+
+```{r}
+install.packages("infotheo")
+```
+
+```{r}
+setwd("C:/class/27052017_A1-kirankumarpatro-master/Data")
+getwd()
+```
+
+##### 1) Create a function which takes vector as an input and return sine of those values
+
+```{r}
+deg2rad <- function(deg)
+{
+  (deg * pi/180)
+}
+sine <- function(x)
+{
+  return(sin(deg2rad(x)))
+}
+z <- c(0,30,45,60,90)
+p <- sine(z)
+```
+
+##### 2) Take data set CustomerData1 and remove NA values and store that into variable mydata. Check structure of the data
+
+```{r}
+mydata <- read.csv("CustomerData1.csv",header = T,sep =",")
+mydata <- na.omit(mydata)
+```
+
+
+
+##### 3) First column is not useful, so remove and store result back into variable mydata
+
+```{r}
+mydata <- mydata[,2:14]
+```
+
+#####4) Convert the variable City into factor
+```{r}
+mydata$City <- as.factor(mydata$City)
+```
+
+##### 5) For mtcars dataset, find mean of hp for each group of gear
+
+```{r}
+mtcars <- head(mtcars)
+mtcars1 <- aggregate(mtcars$hp,by=list(mtcars$gear),FUN=mean,na.rm=T)
+```
+
+##### 6) Plot histogram of variable Revenue in mydata
+
+```{r}
+histogram <- hist(mydata$Revenue, col = "Yellow", xlab = "Revenue", ylab = "Frequency", main = "Revenue Plot")
+```
+
+##### 7) Create dummy variables for City which has been converted into a factor. Put the dummy variables and other variables in datafram mydata2
+
+```{r}
+library(dummies)
+str(mydata)
+citydummyvar <- dummy(mydata$City)
+
+mydata2 <- data.frame(mydata,citydummyvar)
+```
+
+##### 8 ) Remove original City variable from the mydata2
+
+```{r}
+mydata2 <- mydata2[,2:15]
+```
+
+##### 9) Use discretize function from infotheo library and use it to discretize Revenue variable in 5 bins. Use equalfreq as value for the paramter disc
+```{r}
+library(infotheo)
+Revenuebin <- discretize(mydata$Revenue, disc="equalfreq",nbins=5)
+```
+
+##### 10) Use tapply function to get the median of each of the 5 bins of Revenue
+
+```{r}
+medianrevenue <- tapply(mydata$Revenue,Revenuebin,FUN = median, na.rm=T)
+```
+
+

@@ -1,0 +1,398 @@
+---
+title: "Simple Linear Regression"
+author: "INSOFE Lab Session"
+date: "11 June 2017"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+**NOTE** Before starting this assignment please remember to clear your environment, you can do that by running the following code chunk
+
+```{r}
+
+rm(list = ls(all=TRUE))
+
+```
+
+# Agenda 
+
+* Get the data
+
+* Ask an interesting question
+
+* Explore the data
+
+* Clean and Process the Data
+
+* Model the data
+
+* Evaluation and Communication
+
+
+# Reading & Understanding the Data
+
+Make sure the dataset is located in your current working directory, else you can change your working directory using the "setwd()" function.
+
+```{r}
+
+
+
+```
+
+Use the str() function to get a feel for the dataset. This function allows you to get the dimensions of the dataset and also helps you glance through the names, types and a few observations of variables from the dataset.
+
+```{r}
+
+
+
+```
+
+The dataset has 60 observations of 8 variables, the descriptions of the variables are given below :
+
+1) **Price** : The cost of the car
+
+2) **Country** : The country in which the car is up for sale
+
+3) **Reliability** : An ordinal metric for understanding the reliability of the car
+
+4) **Mileage** : The fuel efficiency of the car
+
+5) **Type** : A categorical variable defining the category to which the car belongs.
+
+6) **Weight** : The weight of the car
+
+7) **Displacement** : Represents the engine displacement of the car
+
+8) **HP** : Horsepower of the car, a unit that measures it's power
+
+
+To understand how the variables in the dataset are distributed, use the summary() function to get descriptive statistics of all the numerical variables in the dataset, for categorical variables it gives the frequencies of the different levels.
+
+```{r}
+
+
+
+```
+
+We can observe from the above two outputs that "Reliability" was read in as a numerical attribute, we'll have to convert it later to a factor (categorical attribute)
+
+# Understanding Cars
+
+**What type of cars are priced higher?**
+
+**Are heavy cars more expensive**
+
+**Are cars with higher mileage priced lower?**
+
+You are encouraged to ask other questions (not just about prices of cars) and answer them using the dataset below.
+
+# Exploratory analysis
+
+Let's visually see how the explanatory variables in the dataset are related to the response variables
+
+## Scatter Plots
+
+The Scatter plots below are constructed using the "plot()" function in base R. We can now visually understand the relationships between the explanatory and the response variables.
+
+```{r}
+
+
+
+```
+
+From the above plots, we can immediately see a few intereseting relationships. The "Weight", "HP" and "Disp." have a positive relationship with the "Price" of the car. We can also see an interesting pattern here that the "Mileage" of the car is negatively related to the "Price" of the car.
+
+### Correlation Plot
+
+Now, let's plot a Correlation plot by using the "corrplot()" function from the "corrplot" package.
+
+```{r}
+
+
+
+```
+
+From the above correlation plot, we can see that "Weight" has the highest correlation with "Price". The above plot is great to quickly get a grasp of the inter-relationships between the variables in the dataset.
+
+# Cleaning and Processing the Data
+
+Now, you have to do a set of tasks that vary from data set to data set, from converting the data types of variables to imputing missing values. The steps followed below are suitable only for this dataset.
+
+* The "Reliability" variable in the dataset is a categorical variable and hence must be converted to a factor.
+
+```{r}
+
+
+
+```
+
+It's important to check for missing values in a given dataset, handle missing values in the dataset, imputing these values is one way, the other being omitting the missing values. Here we remove the missing values.
+
+```{r}
+
+
+
+```
+
+* The numeric variables have to be standardized in the dataset to make the regression coefficients much more meaningful and readily interpretable.
+
+* Do not standardize the target variable as we need it in it's original state for meaningful predictions.
+
+```{r}
+
+
+
+```
+
+The data now has to be split into train and test sets. The test set should only be used for reporting the chosen performance metric and should not be used during the analysis. Here we use 75% of the data points to train our models.
+
+```{r}
+
+
+
+```
+
+# Model the Data
+
+Today, we'll be using simple linear regression to model the prices of cars.
+
+## Model 1 (Weight vs Price)
+
+In the first model, we will use "Weight" as the explanatory variable, as it has the highest correlation with "Price", which is our response variable.
+
+```{r}
+
+
+
+```
+
+calling the "summary()" function on the model we built, we get the important model details, such as the R2 value, coefficients and their significance and also the distribution of the residuals.
+
+```{r}
+
+
+```
+
+**Residual Plots for Model 1**
+
+By calling the "plot()" function on the linear regression model object, we get the residual plots. 
+
+```{r}
+
+
+
+```
+
+
+## Other Models
+
+Below, we build multiple simple linear regression models using other variables from the dataset.
+
+### Model 2 (Mileage vs Price)
+
+Get ready to build your second model! Use "lm()" to build your model and "summary()" to understand the model.
+
+```{r}
+
+
+```
+
+
+**Residual Plots for Model 2**
+
+```{r}
+
+
+
+```
+
+
+
+### Model 3 (Displacement vs Price)
+
+Get ready to build your third model! Use "lm()" to build your model and "summary()" to understand the model.
+
+```{r}
+
+
+
+```
+
+
+**Residual Plots for Model 3**
+
+```{r}
+
+
+
+```
+
+
+### Model 4 (Horse Power vs Price)
+
+Get ready to build your fourth model! Use "lm()" to build your model and "summary()" to understand the model.
+
+```{r}
+
+
+```
+
+
+**Residual Plots for Model 4**
+
+```{r}
+
+
+```
+
+# Evaluation
+
+## R2 values
+
+Here, we plot the R^2 values of the models we built, using the R^2 values we are going to pick the most satisfactory model.
+
+```{r}
+
+
+
+```
+
+The "Weight vs Price" model has the best R^2 score. So we pick it as the final model.
+
+# Communication
+
+## Prediction
+
+Predict the prices of unseen cars, using the chosen model.
+
+```{r}
+
+
+
+```
+
+## Performance Metrics
+
+Once we choose the model we have to report performance metrics on the test data. We are going to report three error metrics for regression.
+
+### Error Metrics for Regression
+
+* Mean Absolute Error (MAE)
+
+Create a function called mae that measures the mean absolute error, given the actual and predicted points.
+
+$$MAE = \dfrac{1}{n}\times|\sum_{i = 1}^{n}y_{i} - \hat{y_{i}}|$$
+
+```{r}
+
+
+```
+
+* Mean Squared Error (MSE)
+
+Create a function called mse that measures the mean squared error, given the actual and predicted points.
+
+$$MSE = \dfrac{1}{n}\times(\sum_{i = 1}^{n}y_{i} - \hat{y_{i}})^2$$
+
+```{r}
+
+
+
+```
+
+* Root Mean Squared Error (RMSE)
+
+Create a function called rmse that measures the root mean squared error, given the actual and predicted points.
+
+$$RMSE = \sqrt{\dfrac{1}{n}\times(\sum_{i = 1}^{n}y_{i} - \hat{y_{i}})^2}$$
+
+```{r}
+
+
+```
+
+### Report Performance Metrics
+
+Report performance metrics obtained by using the chosen model on the test data.
+
+```{r}
+
+
+```
+
+* Evaluation of regression models can also be done by calling the "regr.eval()" function from the "DMwR" package
+
+```{r}
+
+
+
+```
+
+The formula obtained by building our chosen regression model is: 
+
+$$PriceofCar = 12626.3 + 3398.8\times (ScaledWeightofCar)$$
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,89 @@
+---
+title: "Multiple Linear Regression on Customer Data"
+author : "Insofe Lab Session"
+date: "June 11 , 2017"
+output:
+  html_document:
+    toc_depth: 3
+    toc_float: true
+  
+
+---
+```{r}
+# Go through the data and understand the attributes to get the info of the variables.
+```
+
+Write a code to clear the environment if needed
+```{r}
+rm(list = ls(all=TRUE))
+```
+
+Write a code to set the working directory.
+```{r }
+setwd("C:/Users/kiranpatro/Desktop/INSOFE notes/assignments lab/20170618-batch29-cse7302c-multiple-linear-regression-kiran-master")
+```
+Think and load the libraries as and when required in this place only as best practice
+```{r}
+
+```
+Write a code to read the csv file as "data" as per required
+```{r eval=TRUE }
+customer_data=read.csv("customer_data.csv")
+
+```
+Write a code to know the names of the attributes
+```{r}
+names(customer_data)
+
+```
+Write a code to find the dimensions of the data
+```{r}
+dim(customer_data)
+```
+
+Write a code to see the head  and tail of the dataset atleast 10rows
+```{r }
+head(customer_data)
+
+tail(customer_data)
+```
+Write a code to see the data types of the attributes 
+```{r }
+str(customer_data)
+
+```
+Write a code to remove the unuseful variables and store the data 
+```{r }
+sum(is.na(customer_data))
+```
+Write a code to observe the variables and convert them into the required formats
+```{r}
+customer_data$CustomerID=as.factor(customer_data$CustomerID)
+customer_data$FavoriteChannelOfTransaction=as.character(customer_data$FavoriteChannelOfTransaction)
+customer_data$FavoriteGame=as.character(customer_data$FavoriteGame)
+```
+Check the changes again using str() command
+```{r }
+str(customer_data)
+
+```
+Write a Code to seperate the target
+```{r}
+train_rows <- sample(x = 1:nrow(customer_data), size = 0.7*nrow(customer_data))
+train_data <- customer_data[train_rows, ]
+
+test_data <- customer_data[-train_rows, ]
+
+
+```
+Write a code to get the numerical attributes out and store them as data_num
+```{r }
+data_num=customer_data[,c("City","NoOfChildren","MinAgeOfChild","MaxAgeOfChild","Tenure","FrquncyOfPurchase","NoOfUnitsPurchased","FrequencyOFPlay","NoOfGamesPlayed","NoOfGamesBought","TotalRevenueGenerated")]
+str(data_num)
+
+```
+Write a code for Normalizing the data_num
+```{r}
+library(caret)
+std_model <- preProcess(train_data[,!names(train_data) %in% c("TotalRevenueGenerated ")], method = c("center","scale"))
+train_data[, !names(

@@ -1,0 +1,207 @@
+---
+title: "R Notebook"
+output:
+  html_notebook: default
+  html_document: default
+---
+
+
+Tools
+========================================================
+*  You will be mainly using following Open-Source softwares in the course:
+    - R 
+        - Base R
+        - R Studio
+        - R Markdown
+    - Python
+        - Spyder
+        - Jupyter Notebook
+    - Github
+
+Python
+========================================================
+* History 
+    - Python was developed by Guido van Rossum, a dutch programmer, in 1989.
+    - He is known as 'Benevolent Dictator For Life'  (BDFL) in Python community
+* Applications
+    - Scientific computations
+    - Big Data & Analytics
+    - Web and GUI Development
+    - Many more!
+    
+Python IDEs 
+========================================================
+  - Spyder is one of the popular IDEs which provide running python script through desktop interface
+  - The Jupyter Notebook provides interactive computing environment that enables users to author documents containing code as well as rich text format
+
+***
+![alt text](images/spyder.png)
+![alt text](images/jupyterpreview.png)
+
+Git & GitHub
+========================================================      
+  - Git is a distributed control system (DVCS) for tracking changes in computer files and collabortaing on those files with your team.
+  - GitHub is hosting service for your repositories which can be version controlled via Git. 
+  
+***
+![alt text](images/GitHub.png)
+
+About R
+========================================================
+class: footer
+
+* Derived from '**S**' language and developed by **R**os Ihaka and **R**obert Gentleman in 1992 
+* Free software environment for statistical computing, data analytics and scientific research.
+* Advanced capabilities like R-Notebooks, R-Presentation and Web Shiny Apps (This presentation is made in R!)
+
+
+
+R Studio
+========================================================
+
+* Integrated development environment (IDE) for R. 
+* Available in open source and commercial editions 
+* Runs on 
+  - The desktop (Windows, Mac, and Linux) or 
+  - In a browser connected to RStudio Server or RStudio Server Pro
+  
+
+
+
+Working with R 
+========================================================
+![R Studio](images/rplusstudio.png)
+
+R Environment
+========================================================
+* Environment can be thought as bag of names
+* Environment name points to an object stored elsewhere in memory
+* The objects do not live in the environment so multiple names can point to the same object
+
+Three special Environments
+========================================================
+* Global Environment
+    - This is the environment in which you normally work. 
+    - The parent of the global environment is the last package that you attached with library() or require().
+* Base environment
+    - Is the environment of the base package. Its parent is the empty environment.
+* Empty environment
+    - Is the ultimate ancestor of all environments, and the only environment without a parent.
+
+Atomic Objects
+========================================================
+* Character
+* Numeric (real numbers)
+* Integer
+* Complex
+* Logical (True/False)
+
+
+
+Evaluation and Printing
+========================================================
+- The "<-"  Or "="  symbols works as the assignment operator.
+
+
+```{r}
+x <- 5 	## nothing printed
+x # Auto printing
+print(x) # Explicit printing
+
+x = 6 	## nothing printed
+x # Auto printing
+print(x) # Explicit printing
+```
+* The [1] indicates the x is a vector and 5 is the first element in that vector
+
+
+Series
+========================================================
+* The ":" operator is used to create integer Sequences
+
+```{r}
+x = 1:20
+x
+```
+
+
+Vectors
+========================================================
+* The most basic object is a vector
+    - A vector can only contain objects of the same class with exception of list which can contain objects of several classes
+* vectors can be created with 'The vector()' function. 
+
+```{r}
+vector(mode='integer',length=6)
+vector(mode='logical',length=6)
+```
+
+Creating Vectors
+========================================================
+Use `c()` function
+```{r}
+x1=c(0.5,0.6)
+x2=c(TRUE,FALSE) 
+x3=c(T,F)
+x4=c('alpha','beta','gamma')
+x5=9:29 
+x6=c(1+2i,2+4i)
+
+```
+
+Matrices
+========================================================
+* Matrices are vectors with dimension attributes
+* Dimension attribute is itself and integer vector of length 2
+```{r}
+v=vector(mode='integer',length=6)
+m=matrix(data=v,nrow=2,ncol=3)
+m
+dim(m)
+attributes(m)
+```
+
+Matrices
+========================================================
+* Matrices are constructed column-wise.
+```{r}
+m <- matrix(1:6, nrow = 2, ncol = 3)
+m
+```
+
+cbind-ing and rbind-ing
+========================================================
+* Matrices can be created by column-binding or row-binding with cbind() and rbind().
+```{r}
+x <- 1:3
+y <- 10:12
+cbind(x, y)
+rbind(x, y)
+```
+
+Data Frames
+========================================================
+* Data frames are used to store tabular data.
+  - Unlike matrices, data frames can store different classes of objects in each column; matrices must have every element be the same class.
+```{r}
+x <- data.frame(Cid = 1:4, Purchase = c(T, T, F, F))
+x
+nrow(x)
+ncol(x)
+```
+
+Reading Data
+========================================================
+* There are a few principal functions reading data into R.
+  - read.table, read.csv, for reading tabular data
+  - readLines, for reading lines of a text file
+  - source, for reading in R code files (inverse of dump)
+  - load, for reading in saved workspaces
+
+Reading Data
+========================================================
+```{r}
+data <- read.csv("data.csv",sep = ",")
+data
+dim(data)
+```
